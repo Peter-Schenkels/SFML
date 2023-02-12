@@ -499,3 +499,63 @@ function(sfml_export_targets)
             DESTINATION ${config_package_location}
             COMPONENT devel)
 endfunction()
+
+# add a new target which is a SFML project
+# example: sfml_add_project(ftp
+#                           SOURCES ftp.cpp ...
+#                           BUNDLE_RESOURCES MainMenu.nib ...    # Files to be added in target but not installed next to the executable
+#                           DEPENDS SFML::Network
+#                           RESOURCES_DIR resources)             # A directory to install next to the executable and sources
+macro(sfml_add_project target)
+
+    # parse the arguments
+    cmake_parse_arguments(THIS "GUI_APP" "RESOURCES_DIR" "SOURCES;BUNDLE_RESOURCES;DEPENDS" ${ARGN})
+
+    # set a source group for the source files
+    source_group("" FILES ${THIS_SOURCES})
+
+    # check whether resources must be added in target
+    set(target_input ${THIS_SOURCES})
+    if(THIS_BUNDLE_RESOURCES)
+        set(target_input ${target_input} ${THIS_BUNDLE_RESOURCES})
+    endif()
+
+    # create the target
+    if(THIS_GUI_APP AND SFML_OS_WINDOWS AND NOT DEFINED CMAKE_CONFIGURATION_TYPES AND ${CMAKE_BUILD_TYPE} STREQUAL "Release")
+        add_executable(${target} WIN32 ${target_input})
+        target_link_libraries(${target} PRIVATE SFML::Main)
+    else()
+        add_executable(${target} ${target_input})
+    endif()
+
+    if(SFML_USE_STATIC_STD_LIBS)
+        set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+
+    # enable precompiled headers
+    if (SFML_ENABLE_PCH)
+        message(VERBOSE "enabling PCH for SFML Project '${target}'")
+        target_precompile_headers(${target} REUSE_FROM sfml-system)
+    endif()
+
+    set_target_warnings(${target})
+    set_public_symbols_hidden(${target})
+
+    # set the debug suffix
+    set_target_properties(${target} PROPERTIES DEBUG_POSTFIX -d)
+
+    # set the target's folder (for IDEs that support it, e.g. Visual Studio)
+    set_target_properties(${target} PROPERTIES FOLDER "Projects")
+
+    # set the target flags to use the appropriate C++ standard library
+    sfml_set_stdlib(${target})
+
+    # set the Visual Studio startup path for debugging
+    set_target_properties(${target} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+    # link the target to its SFML dependencies
+    if(THIS_DEPENDS)
+        target_link_libraries(${target} PRIVATE ${THIS_DEPENDS})
+    endif()
+
+endmacro()

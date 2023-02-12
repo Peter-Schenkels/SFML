@@ -525,6 +525,12 @@ if(SFML_BUILD_EXAMPLES AND NOT SFML_OS_ANDROID)
     add_subdirectory(examples)
 endif()
 
+# add an option for building projects
+sfml_set_option(SFML_BUILD_PROJECTS FALSE BOOL "TRUE to build custom SFML projects, FALSE to ignore them")
+if(SFML_BUILD_PROJECTS AND NOT SFML_OS_ANDROID AND NOT SFML_OS_IOS)
+    add_subdirectory(projects)
+endif()
+
 # add an option for building the test suite
 sfml_set_option(SFML_BUILD_TEST_SUITE FALSE BOOL "TRUE to build the SFML test suite, FALSE to ignore it")
 
